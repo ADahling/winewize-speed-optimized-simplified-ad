@@ -2,60 +2,19 @@
 
 import { validateWineExtraction, normalizeWineVarietals } from './validationUtils.ts';
 import { getWineAnalysisPrompt } from './promptBuilder.ts';
-
-// Get your API key
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+import { callExtractionService } from '../src/services/extractionService.ts';
 
 export async function processWineExtraction(
   imageBase64: string,
   context: any
 ): Promise<any> {
   const startTime = Date.now();
-  console.log(`🔄 Processing wine image with direct GPT-4o approach`);
-  
-  if (!OPENAI_API_KEY) {
-    throw new Error('OpenAI API key not configured');
-  }
+  console.log(`🔄 Processing wine image with extraction service`);
 
   const prompt = getWineAnalysisPrompt();
-  const imageData = imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`;
 
-  // Log prompt and image info
-  console.log('�� [Wine] Prompt sent to OpenAI:', prompt);
-  console.log('🖼️ [Wine] Base64 image size (chars):', imageBase64.length);
   try {
-    const header = imageBase64.slice(0, 30);
-    console.log('🖼️ [Wine] Base64 image preview:', header + '...');
-  } catch (e) {}
-  
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { 
-                type: 'image_url', 
-                image_url: { url: imageData }
-              }
-            ]
-          }
-        ],
-        response_format: { type: 'json_object' },
-        max_tokens: 4000,
-        temperature: 0.1
-      }),
-    });
-
-    const data = await response.json();
+    const data = await callExtractionService(imageBase64, prompt);
 
     // === DIAGNOSTIC LOGGING START ===
     console.log('�� [DIAG] WINE PROMPT SENT TO OPENAI:', prompt);
